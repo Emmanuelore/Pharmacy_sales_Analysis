@@ -1,1 +1,1 @@
-# Parch-and-Posey
+# Parch-and-Posey Sales Analysis (SQL)
