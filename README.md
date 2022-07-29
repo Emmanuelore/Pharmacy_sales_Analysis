@@ -1,1 +1,1 @@
-# Parch-and-Posey Sales Analysis (SQL)
+Parch and Posey Manager wants to gain insight from the company database inorder to make important decision to aid profit. I analysis the company data using SQL to help the company make effectively business decision.
