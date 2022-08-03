@@ -1,14 +1,60 @@
-/*first 5 rows and all columns from orders table that have a dollar amount of gloss_amt_usd greater than or equal to 1000*/
-SELECT *
+/*write a query to find the average for each paper qty and average amount in usd*/
+SELECT AVG(standard_qty) AS standard_qty_avg,
+AVG(gloss_qty) AS gloss_qty_avg,
+AVG(poster_qty) AS poster_qty_avg,
+AVG(standard_amt_usd) AS standard_amt_avg,
+AVG(gloss_amt_usd) AS gloss_amt_avg,
+AVG(poster_amt_usd) AS poster_amt_avg
 FROM orders
-WHERE gloss_amt_usd >=1000
-LIMIT 5
 
-/*first 10 rows and all columns from the orders table that have a total_amt_usd less than 500*/
-SELECT *
+/*write a query to display three group low,middle,top base on total amount greater than 200000(top), total amount between 100000 and 200000(middle) and total amount below 100000(low) for year 2016 and 2017 only, order from highest to lowest*/
+SELECT accounts.name,SUM(total_amt_usd) AS total,occurred_at,
+CASE WHEN SUM(total_amt_usd) >=200000 THEN 'top'
+WHEN SUM(total_amt_usd) BETWEEN 100000 AND 200000 THEN 'middle' 
+WHEN SUM(total_amt_usd) <100000 THEN 'low' END AS level
+FROM accounts
+JOIN orders
+ON accounts.id = orders.account_id
+WHERE occurred_at BETWEEN '2016-01-01' AND '2017-12-31'
+GROUP BY 1,3
+ORDER BY 2 DESC
+
+/*Write a window function query to display the standard fourth quartile of account id and standard paper qty*/
+SELECT account_id,occurred_at,SUM(standard_qty) standard,
+NTILE(4) OVER (PARTITION BY account_id ORDER BY SUM(standard_qty) ) standard_quartile
 FROM orders
-WHERE total_amt_usd <500
-LIMIT 10
+GROUP BY 1,2
+
+/*Provide the name of the sales_reps in each region with the largest amount of total_amt_usd*/
+SELECT t3.rep_name,t3.reg_name,t3.total
+FROM
+(SELECT reg_name, MAX(total) total
+FROM
+(SELECT sales_reps.name rep_name,region.name reg_name,SUM(total_amt_usd) total
+FROM region
+JOIN sales_reps
+ON region.id = sales_reps.region_id
+JOIN accounts
+ON sales_reps.id = accounts.sales_rep_id
+JOIN orders
+ON accounts.id = orders.account_id
+GROUP BY 1,2
+ORDER BY 3 DESC) t1
+GROUP BY 1
+ORDER BY 1 DESC)t2
+JOIN
+(SELECT sales_reps.name rep_name,region.name reg_name,SUM(total_amt_usd) total
+FROM region
+JOIN sales_reps
+ON region.id = sales_reps.region_id
+JOIN accounts
+ON sales_reps.id = accounts.sales_rep_id
+JOIN orders
+ON accounts.id = orders.account_id
+WHERE  region.name IN ('Northeast','West','Southeast','Midwest')
+GROUP BY 1,2
+ORDER BY 3 DESC)t3
+ON t3.reg_name= t2.reg_name AND t3.total=t2.total
 
 /*create a column that divides standard_amt_usd by the standard_qty to find the unit price include id and account_id,limit to 10*/
 SELECT id,account_id, standard_amt_usd/standard_qty AS unit_price
@@ -25,52 +71,17 @@ SELECT *
 FROM accounts
 WHERE name LIKE 'C%'
 
-/*find all the company that have 'one' in it name and it details in account table*/
-SELECT *
-FROM accounts
-WHERE name LIKE '%one%'
-
-/*find all the company that end with 's' and it details in account table*/
-SELECT *
-FROM accounts
-WHERE name LIKE '%s'
-
 /*find name,primary_poc,sales_rep_id for account name Walmart,Target and Nordstrom from account table*/
 SELECT name,primary_poc,sales_rep_id
 FROM accounts
 WHERE name IN ('Walmart','Target','Nordstrom')
-
-/*using the web_events table,find all information of individuals who were contacted through channel 'organic' and 'adwords'*/
-SELECT *
-FROM web_events
-WHERE channel IN ('organic','adwords')
 
 /*write a query that returns all the orders where standard_qty >1000,poster_qty is 0 and gloss_qty is 0*/
 SELECT standard_qty,poster_qty,gloss_qty
 FROM orders
 WHERE standard_qty > 1000 AND poster_qty=0 AND gloss_qty=0
 
-/*write a query that returns a list  of orders where standard_qty is 0 and either gloss_qty or poster_qty >1000*/
-SELECT standard_qty,poster_qty,gloss_qty
-FROM orders
-WHERE standard_qty =0 AND (poster_qty>1000 OR gloss_qty>1000)
-
-/*join accounts and orders table, include standard_qty,gloss_qty,poster_qty,website,primary_poc*/
-SELECT standard_qty,gloss_qty,poster_qty,website,primary_poc
-FROM orders
-JOIN accounts
-ON orders.account_id = accounts.id
-
-/*write a query to show region_name,sales_rep_name,account_name and sort alphabetically*/
-SELECT region.name AS region_name,sales_reps.name AS sales_name,accounts.name AS account_name
-FROM region
-JOIN sales_reps
-ON region.id = sales_reps.region_id
-JOIN accounts
-ON sales_reps.id = accounts.sales_rep_id
-ORDER BY accounts.name 
-
-/*rite a query to show region_name,sales_rep_name,account_name for 'Midwest' region only and sort alphabetically*/
+/*write a query to show region_name,sales_rep_name,account_name for 'Midwest' region only and sort alphabetically*/
 SELECT region.name AS region_name,sales_reps.name AS sales_name,accounts.name AS account_name
 FROM region
 JOIN sales_reps
@@ -114,14 +125,6 @@ FROM orders
 SELECT MIN(occurred_at)
 FROM orders
 
-/*write a query to find the average for each paper qty and average amount in usd*/
-SELECT AVG(standard_qty) AS standard_qty_avg,
-AVG(gloss_qty) AS gloss_qty_avg,
-AVG(poster_qty) AS poster_qty_avg,
-AVG(standard_amt_usd) AS standard_amt_avg,
-AVG(gloss_amt_usd) AS gloss_amt_avg,
-AVG(poster_amt_usd) AS poster_amt_avg
-FROM orders
 
 /*write a query to return the account name with the earliest order ascendingly*/
 SELECT accounts.name,MIN(orders.occurred_at)
@@ -206,17 +209,6 @@ JOIN orders
 ON accounts.id = orders.account_id
 GROUP BY 1
 
-/*write a query to display three group low,middle,top base on total amount greater than 200000(top), total amount between 100000 and 200000(middle) and total amount below 100000(low) for year 2016 and 2017 only, order from highest to lowest*/
-SELECT accounts.name,SUM(total_amt_usd) AS total,occurred_at,
-CASE WHEN SUM(total_amt_usd) >=200000 THEN 'top'
-WHEN SUM(total_amt_usd) BETWEEN 100000 AND 200000 THEN 'middle' 
-WHEN SUM(total_amt_usd) <100000 THEN 'low' END AS level
-FROM accounts
-JOIN orders
-ON accounts.id = orders.account_id
-WHERE occurred_at BETWEEN '2016-01-01' AND '2017-12-31'
-GROUP BY 1,3
-ORDER BY 2 DESC
 
 /*write a query to identify the top performing sales rep associated with more than 200 orders as (top) and below 200 as (not)*/
 SELECT sales_reps.name, COUNT(total),
@@ -243,36 +235,6 @@ ON accounts.sales_rep_id = sales_reps.id
 GROUP BY 1
 ORDER BY 3 DESC
 
-/*Provide the name of the sales_reps in each region with the largest amount of total_amt_usd*/
-SELECT t3.rep_name,t3.reg_name,t3.total
-FROM
-(SELECT reg_name, MAX(total) total
-FROM
-(SELECT sales_reps.name rep_name,region.name reg_name,SUM(total_amt_usd) total
-FROM region
-JOIN sales_reps
-ON region.id = sales_reps.region_id
-JOIN accounts
-ON sales_reps.id = accounts.sales_rep_id
-JOIN orders
-ON accounts.id = orders.account_id
-GROUP BY 1,2
-ORDER BY 3 DESC) t1
-GROUP BY 1
-ORDER BY 1 DESC)t2
-JOIN
-(SELECT sales_reps.name rep_name,region.name reg_name,SUM(total_amt_usd) total
-FROM region
-JOIN sales_reps
-ON region.id = sales_reps.region_id
-JOIN accounts
-ON sales_reps.id = accounts.sales_rep_id
-JOIN orders
-ON accounts.id = orders.account_id
-WHERE  region.name IN ('Northeast','West','Southeast','Midwest')
-GROUP BY 1,2
-ORDER BY 3 DESC)t3
-ON t3.reg_name= t2.reg_name AND t3.total=t2.total
 
 /*Write a query to display each region with the largest total amt usd and count of total orders*/
 SELECT region.name reg_name,SUM(total_amt_usd) total,COUNT(total)
@@ -327,11 +289,6 @@ SELECT id,account_id,total,
 RANK() OVER (PARTITION BY account_id ORDER BY total DESC) rank
 FROM orders
 
-/*Write a window function query to display the standard fourth quartile of account id and standard paper qty*/
-SELECT account_id,occurred_at,SUM(standard_qty) standard,
-NTILE(4) OVER (PARTITION BY account_id ORDER BY SUM(standard_qty) ) standard_quartile
-FROM orders
-GROUP BY 1,2
 
 /*Write a self join query for web events column*/
 SELECT w1.id AS w1_id,
