@@ -1,1 +1,1 @@
-Parch and Posey Manager wants to gain insight from the company database inorder to make important decision to aid profit. I analysis the company data using SQL to help the company make effectively business decision.
+This project is based on Germany and Poland pharmacy sales for the year 2017 – 2020. I used PostgreSQL to import, clean, manipulate and derive meaningful insight from the dataset.
